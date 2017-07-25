@@ -104,6 +104,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,10 +147,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="registry.cpp" />
     <ClCompile Include="xresources_parser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="color_info.h" />
+    <ClInclude Include="registry.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include "color_info.h"
+#include "registry.h"
 
 ColorInfo parse_xresources_file(std::string);
 void set_console_colors(NT_CONSOLE_PROPS&, ColorInfo&);
@@ -80,20 +81,42 @@ int wmain(int argc, wchar_t* argv[])
     }
     else
     {
-        props = (NT_CONSOLE_PROPS*)LocalAlloc(LPTR, sizeof(NT_CONSOLE_PROPS));
-        props->dbh.cbSize = sizeof(NT_CONSOLE_PROPS);
-        props->dbh.dwSignature = NT_CONSOLE_PROPS_SIG;
-        props->dwWindowSize.X = 162;
-        props->dwWindowSize.Y = 43;
-        props->dwScreenBufferSize.X = 162;
-        props->dwScreenBufferSize.Y = 1000;
-        props->uHistoryBufferSize = 25;
-        props->uNumberOfHistoryBuffers = 4;
-        props->uCursorSize = 25;
-        props->bQuickEdit = TRUE;
-        props->bAutoPosition = TRUE;
-        wcscpy(props->FaceName, L"Lucida Console");
-        props->wFillAttribute = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+		try
+		{
+			auto hkey_create = [&](PHKEY hkey) -> LONG {
+				return RegOpenKeyExW(HKEY_CURRENT_USER, L"Console", 0, KEY_READ, hkey);
+			};
+			HKey hk(hkey_create);
+
+			props = (NT_CONSOLE_PROPS*)LocalAlloc(LPTR, sizeof(NT_CONSOLE_PROPS));
+			props->dbh.cbSize = sizeof(NT_CONSOLE_PROPS);
+			props->dbh.dwSignature = NT_CONSOLE_PROPS_SIG;
+
+			COORD windowSize = { 162, 43 };
+			DWORD dwWindowSize_default = *((DWORD *)&windowSize);
+			hk.QueryValue(L"WindowSize", (DWORD *)&props->dwWindowSize, dwWindowSize_default);
+			COORD screenBufferSize = { 162, 1000 };
+			DWORD dwScreenBufferSize_default = *((DWORD *)&screenBufferSize);
+			hk.QueryValue(L"ScreenBufferSize", (DWORD *)&props->dwScreenBufferSize, dwScreenBufferSize_default);
+			DWORD val;
+			hk.QueryValue(L"HistoryBufferSize", &val, (DWORD)25);
+			props->uHistoryBufferSize = val;
+			hk.QueryValue(L"NumberOfHistoryBuffers", &val, (DWORD)4);
+			props->uNumberOfHistoryBuffers = val;
+			hk.QueryValue(L"CursorSize", &val, (DWORD)25);
+			props->uCursorSize = val;
+			
+			props->uCursorSize = 25;
+			props->bQuickEdit = TRUE;
+			props->bAutoPosition = TRUE;
+			wcscpy(props->FaceName, L"Lucida Console");
+			props->wFillAttribute = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+		}
+		catch (KeyError &e)
+		{
+			std::cerr << "Error opening HKEY_CURRENT_USER\\Console" << std::endl;
+			return e.error;
+		}
     }
 
     set_console_colors(*props, colorInfo);
